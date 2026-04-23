@@ -5,11 +5,15 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
 
 import static space.battle.GameSettings.SCALE;
+
 public class GameObject {
+
+    public short cBits;
 
     public int width;
     public int height;
@@ -17,16 +21,25 @@ public class GameObject {
     public Body body;
     Texture texture;
 
-    GameObject(String texturePath, int x, int y, int width, int height, World world) {
+    GameObject(String texturePath, int x, int y, int width, int height, short cBits, World world) {
         this.width = width;
         this.height = height;
+        this.cBits = cBits;
 
         texture = new Texture(texturePath);
         body = createBody(x, y, world);
     }
 
     public void draw(SpriteBatch batch) {
-        batch.draw(texture, getX() - (width / 2f), getY() - (height / 2f), width, height);
+        batch.draw(texture,
+            getX() - (width / 2f),
+            getY()- (height / 2f),
+            width,
+            height);
+    }
+
+    public void hit() {
+        // all physics objects could be hit
     }
 
     public int getX() {
@@ -45,26 +58,26 @@ public class GameObject {
         body.setTransform(body.getPosition().x, y * SCALE, 0);
     }
 
-
     private Body createBody(float x, float y, World world) {
-        BodyDef def = new BodyDef(); // def - defenition (определение) это объект, который содержит все данные, необходимые для посторения тела
+        BodyDef def = new BodyDef();
+        def.type = BodyDef.BodyType.DynamicBody;
+        def.fixedRotation = true;
+        Body body = world.createBody(def);
 
-        def.type = BodyDef.BodyType.DynamicBody; // тип тела, который имеет массу и может быть подвинут под действием сил
-        def.fixedRotation = true; // запрещаем телу вращаться вокруг своей оси
-        Body body = world.createBody(def); // создаём в мире world объект по описанному нами определению
-
-        CircleShape circleShape = new CircleShape(); // задаём коллайдер в форме круга
-        circleShape.setRadius(Math.max(width, height) * SCALE / 2f); // определяем радиус круга коллайдера
+        CircleShape circleShape = new CircleShape();
+        circleShape.setRadius(Math.max(width, height) * SCALE / 2f);
 
         FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = circleShape; // устанавливаем коллайдер
-        fixtureDef.density = 0.1f; // устанавливаем плотность тела
-        fixtureDef.friction = 1f; // устанвливаем коэффициент трения
+        fixtureDef.shape = circleShape;
+        fixtureDef.density = 0.1f;
+        fixtureDef.friction = 1f;
+        fixtureDef.filter.categoryBits = cBits;
 
-        body.createFixture(fixtureDef); // создаём fixture по описанному нами определению
-        circleShape.dispose(); // так как коллайдер уже скопирован в fixutre, то circleShape может быть отчищена, чтобы не забивать оперативную память.
+        Fixture fixture = body.createFixture(fixtureDef);
+        fixture.setUserData(this);
+        circleShape.dispose();
 
-        body.setTransform(x * SCALE, y * SCALE, 0); // устанавливаем позицию тела по координатным осям и угол поворота
+        body.setTransform(x * SCALE, y * SCALE, 0);
         return body;
     }
 
