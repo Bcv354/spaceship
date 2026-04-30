@@ -4,17 +4,31 @@ import com.badlogic.gdx.utils.TimeUtils;
 
 public class GameSession {
 
+    public GameState state;
     long nextTrashSpawnTime;
     long sessionStartTime;
+    long pauseStartTime;
 
     public GameSession() {
     }
 
     public void startGame() {
+        state = GameState.PLAYING;
         sessionStartTime = TimeUtils.millis();
         nextTrashSpawnTime = sessionStartTime + (long) (GameSettings.STARTING_TRASH_APPEARANCE_COOL_DOWN
             * getTrashPeriodCoolDown());
     }
+
+    public void pauseGame() {
+        state = GameState.PAUSED;
+        pauseStartTime = TimeUtils.millis();
+    }
+
+    public void resumeGame() {
+        state = GameState.PLAYING;
+        sessionStartTime += TimeUtils.millis() - pauseStartTime;
+    }
+
 
     public boolean shouldSpawnTrash() {
         if (nextTrashSpawnTime <= TimeUtils.millis()) {

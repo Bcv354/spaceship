@@ -21,6 +21,10 @@ public class ShipObject extends GameObject {
         livesLeft = 3;
     }
 
+    public int getLiveLeft() {
+        return livesLeft;
+    }
+
     @Override
     public void draw(SpriteBatch batch) {
         putInFrame();
