@@ -3,8 +3,7 @@ package space.battle.lwjgl3;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 
-import space.battle.GameSettings;
-import space.battle.MyGdxGame;
+import space.battle.base.GameSettings;
 import space.battle.MyGdxGame;
 
 /** Launches the desktop (LWJGL3) application. */

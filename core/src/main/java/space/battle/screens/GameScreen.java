@@ -6,11 +6,13 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import space.battle.ContactManager;
-import space.battle.GameResources;
-import space.battle.GameSession;
-import space.battle.GameSettings;
-import space.battle.GameState;
+import space.battle.base.MemoryManager;
+import space.battle.components.RecordsListView;
+import space.battle.manager.ContactManager;
+import space.battle.base.GameResources;
+import space.battle.base.GameSession;
+import space.battle.base.GameSettings;
+import space.battle.base.GameState;
 import space.battle.components.ButtonView;
 import space.battle.components.ImageView;
 import space.battle.components.LiveView;
@@ -46,6 +48,11 @@ public class GameScreen extends ScreenAdapter {
     TextView pauseTextView;
     ButtonView homeButton;
     ButtonView continueButton;
+
+    // ENDED state UI
+    TextView recordsTextView;
+    RecordsListView recordsListView;
+    ButtonView homeButton2;
 
     public GameScreen(MyGdxGame myGdxGame) {
         this.myGdxGame = myGdxGame;
@@ -90,6 +97,16 @@ public class GameScreen extends ScreenAdapter {
             "Continue"
         );
 
+        recordsListView = new RecordsListView(myGdxGame.commonWhiteFont, 690);
+        recordsTextView = new TextView(myGdxGame.largeWhiteFont, 206, 842, "Last records");
+        homeButton2 = new ButtonView(
+            280, 365,
+            160, 70,
+            myGdxGame.commonBlackFont,
+            GameResources.BUTTON_SHORT_BG_IMG_PATH,
+            "Home"
+        );
+
     }
 
     @Override
@@ -120,16 +137,19 @@ public class GameScreen extends ScreenAdapter {
                     myGdxGame.world
                 );
                 bulletArray.add(laserBullet);
+                if (myGdxGame.audioManager.isSoundOn) myGdxGame.audioManager.shootSound.play();
             }
 
             if (!shipObject.isAlive()) {
-                System.out.println("Game over!");
+                gameSession.endGame();
+                recordsListView.setRecords(MemoryManager.loadRecordsTable());
             }
 
             updateTrash();
             updateBullets();
             backgroundView.move();
-            scoreTextView.setText("Score: " + 100);
+            gameSession.updateScore();
+            scoreTextView.setText("Score: " + gameSession.getScore());
             liveView.setLeftLives(shipObject.getLiveLeft());
 
             myGdxGame.stepWorld();
@@ -155,6 +175,13 @@ public class GameScreen extends ScreenAdapter {
                         gameSession.resumeGame();
                     }
                     if (homeButton.isHit(myGdxGame.touch.x, myGdxGame.touch.y)) {
+                        myGdxGame.setScreen(myGdxGame.menuScreen);
+                    }
+                    break;
+
+                case ENDED:
+
+                    if (homeButton2.isHit(myGdxGame.touch.x, myGdxGame.touch.y)) {
                         myGdxGame.setScreen(myGdxGame.menuScreen);
                     }
                     break;
@@ -184,14 +211,28 @@ public class GameScreen extends ScreenAdapter {
             pauseTextView.draw(myGdxGame.batch);
             homeButton.draw(myGdxGame.batch);
             continueButton.draw(myGdxGame.batch);
+        } else if (gameSession.state == GameState.ENDED) {
+            fullBlackoutView.draw(myGdxGame.batch);
+            recordsTextView.draw(myGdxGame.batch);
+            recordsListView.draw(myGdxGame.batch);
+            homeButton2.draw(myGdxGame.batch);
         }
 
         myGdxGame.batch.end();
+
     }
 
     private void updateTrash() {
         for (int i = 0; i < trashArray.size(); i++) {
-            if (!trashArray.get(i).isInFrame() || !trashArray.get(i).isAlive()) {
+
+            boolean hasToBeDestroyed = !trashArray.get(i).isAlive() || !trashArray.get(i).isInFrame();
+
+            if (!trashArray.get(i).isAlive()) {
+                gameSession.destructionRegistration();
+                if (myGdxGame.audioManager.isSoundOn) myGdxGame.audioManager.explosionSound.play(0.2f);
+            }
+
+            if (hasToBeDestroyed) {
                 myGdxGame.world.destroyBody(trashArray.get(i).body);
                 trashArray.remove(i--);
             }

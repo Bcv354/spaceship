@@ -3,7 +3,7 @@ package space.battle.components;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import space.battle.GameResources;
+import space.battle.base.GameResources;
 
 public class LiveView extends View {
 

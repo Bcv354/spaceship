@@ -1,6 +1,6 @@
 package space.battle;
 
-import static space.battle.GameSettings.*;
+import static space.battle.base.GameSettings.*;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
@@ -13,8 +13,13 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.World;
 
+import space.battle.base.FontBuilder;
+import space.battle.base.GameResources;
+import space.battle.base.GameSettings;
+import space.battle.manager.AudioManager;
 import space.battle.screens.GameScreen;
 import space.battle.screens.MenuScreen;
+import space.battle.screens.SettingsScreen;
 
 public class MyGdxGame extends Game {
 
@@ -27,9 +32,11 @@ public class MyGdxGame extends Game {
     public Vector3 touch;
     public SpriteBatch batch;
     public OrthographicCamera camera;
+    public AudioManager audioManager;
 
     public GameScreen gameScreen;
     public MenuScreen menuScreen;
+    public SettingsScreen settingsScreen;
 
     float accumulator = 0;
 
@@ -46,9 +53,11 @@ public class MyGdxGame extends Game {
         batch = new SpriteBatch();
         camera = new OrthographicCamera();
         camera.setToOrtho(false, GameSettings.SCREEN_WIDTH, GameSettings.SCREEN_HEIGHT);
+        audioManager = new AudioManager();
 
         gameScreen = new GameScreen(this);
         menuScreen = new MenuScreen(this);
+        settingsScreen = new SettingsScreen(this);
 
         setScreen(menuScreen);
     }

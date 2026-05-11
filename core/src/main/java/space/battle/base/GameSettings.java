@@ -1,4 +1,4 @@
-package space.battle;
+package space.battle.base;
 
 public class GameSettings {
 

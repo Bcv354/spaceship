@@ -1,4 +1,4 @@
-package space.battle;
+package space.battle.base;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;

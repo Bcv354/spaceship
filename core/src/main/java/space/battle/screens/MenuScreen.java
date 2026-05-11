@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import space.battle.GameResources;
+import space.battle.base.GameResources;
 import space.battle.MyGdxGame;
 import space.battle.components.ButtonView;
 import space.battle.components.MovingBackgroundView;
@@ -63,7 +63,7 @@ public class MenuScreen extends ScreenAdapter {
                 Gdx.app.exit();
             }
             if (settingsButtonView.isHit(myGdxGame.touch.x, myGdxGame.touch.y)) {
-                System.out.println("Go to settings Screen");
+                myGdxGame.setScreen(myGdxGame.settingsScreen);
             }
         }
     }

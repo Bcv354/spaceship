@@ -3,7 +3,7 @@ package space.battle.components;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import space.battle.GameSettings;
+import space.battle.base.GameSettings;
 
 public class MovingBackgroundView extends View {
 

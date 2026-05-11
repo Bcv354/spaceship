@@ -5,7 +5,7 @@ import com.badlogic.gdx.physics.box2d.World;
 
 import java.util.Random;
 
-import space.battle.GameSettings;
+import space.battle.base.GameSettings;
 
 public class TrashObject extends GameObject {
 
