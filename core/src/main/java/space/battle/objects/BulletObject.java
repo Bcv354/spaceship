@@ -10,7 +10,8 @@ public class BulletObject extends GameObject {
     public boolean wasHit;
 
     public BulletObject(int x, int y, int width, int height, String texturePath, World world) {
-        super(texturePath, x, y, width, height, GameSettings.BULLET_BIT, world);
+        super(texturePath, x, y, width, height,
+            GameSettings.BULLET_BIT, GameSettings.BULLET_MASK, true, world);
         body.setLinearVelocity(new Vector2(0, GameSettings.BULLET_VELOCITY));
         body.setBullet(true);
         wasHit = false;

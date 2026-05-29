@@ -1,5 +1,6 @@
 package space.battle.objects;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
@@ -10,11 +11,16 @@ import space.battle.base.GameSettings;
 
 public class ShipObject extends GameObject {
 
+    private static final long INVINCIBILITY_MS = 1500;
+
     long lastShotTime;
     int livesLeft;
+    long invincibleUntil;
+    boolean justHit;
 
     public ShipObject(int x, int y, int width, int height, String texturePath, World world) {
-        super(texturePath, x, y, width, height, GameSettings.SHIP_BIT, world);
+        super(texturePath, x, y, width, height,
+            GameSettings.SHIP_BIT, GameSettings.SHIP_MASK, false, world);
         body.setLinearDamping(10);
         livesLeft = 3;
     }
@@ -23,10 +29,32 @@ public class ShipObject extends GameObject {
         return livesLeft;
     }
 
+    public boolean isInvincible() {
+        return TimeUtils.millis() < invincibleUntil;
+    }
+
+    /** true один раз после реального урона — для тряски экрана. */
+    public boolean pollJustHit() {
+        if (justHit) {
+            justHit = false;
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public void draw(SpriteBatch batch) {
         putInFrame();
-        super.draw(batch);
+        if (isInvincible() && (TimeUtils.millis() / 120) % 2 == 0) {
+            return;
+        }
+        if (isInvincible()) {
+            batch.setColor(1f, 1f, 1f, 0.55f);
+            super.draw(batch);
+            batch.setColor(Color.WHITE);
+        } else {
+            super.draw(batch);
+        }
     }
 
     public void move(Vector3 vector3) {
@@ -62,7 +90,12 @@ public class ShipObject extends GameObject {
 
     @Override
     public void hit() {
+        if (isInvincible()) {
+            return;
+        }
         livesLeft -= 1;
+        invincibleUntil = TimeUtils.millis() + INVINCIBILITY_MS;
+        justHit = true;
     }
 
     public boolean isAlive() {

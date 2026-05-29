@@ -24,6 +24,11 @@ public class GameSettings {
     public static final short SHIP_BIT = 4;
     public static final short BULLET_BIT = 8;
 
+    /** С кем может сталкиваться каждый тип (фильтр Box2D). */
+    public static final short TRASH_MASK = SHIP_BIT | BULLET_BIT;
+    public static final short SHIP_MASK = TRASH_BIT;
+    public static final short BULLET_MASK = TRASH_BIT;
+
     // Object sizes
 
     public static final int SHIP_WIDTH = 150;

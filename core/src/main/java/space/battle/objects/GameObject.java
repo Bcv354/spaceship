@@ -21,13 +21,14 @@ public class GameObject {
     public Body body;
     Texture texture;
 
-    GameObject(String texturePath, int x, int y, int width, int height, short cBits, World world) {
+    GameObject(String texturePath, int x, int y, int width, int height,
+               short cBits, short maskBits, boolean sensor, World world) {
         this.width = width;
         this.height = height;
         this.cBits = cBits;
 
         texture = new Texture(texturePath);
-        body = createBody(x, y, world);
+        body = createBody(x, y, width, height, cBits, maskBits, sensor, world);
     }
 
     public void draw(SpriteBatch batch) {
@@ -58,7 +59,8 @@ public class GameObject {
         body.setTransform(body.getPosition().x, y * SCALE, 0);
     }
 
-    private Body createBody(float x, float y, World world) {
+    private Body createBody(float x, float y, int width, int height,
+                            short cBits, short maskBits, boolean sensor, World world) {
         BodyDef def = new BodyDef();
         def.type = BodyDef.BodyType.DynamicBody;
         def.fixedRotation = true;
@@ -70,8 +72,11 @@ public class GameObject {
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShape;
         fixtureDef.density = 0.1f;
-        fixtureDef.friction = 1f;
+        fixtureDef.friction = 0f;
+        fixtureDef.restitution = 0f;
+        fixtureDef.isSensor = sensor;
         fixtureDef.filter.categoryBits = cBits;
+        fixtureDef.filter.maskBits = maskBits;
 
         Fixture fixture = body.createFixture(fixtureDef);
         fixture.setUserData(this);

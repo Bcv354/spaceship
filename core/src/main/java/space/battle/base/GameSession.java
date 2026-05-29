@@ -12,6 +12,7 @@ public class GameSession {
     long pauseStartTime;
     private int score;
     int destructedTrashNumber;
+    int destructionBonus;
 
     public GameSession() {
     }
@@ -20,6 +21,7 @@ public class GameSession {
         state = GameState.PLAYING;
         score = 0;
         destructedTrashNumber = 0;
+        destructionBonus = 0;
         sessionStartTime = TimeUtils.millis();
         nextTrashSpawnTime = sessionStartTime + (long) (GameSettings.STARTING_TRASH_APPEARANCE_COOL_DOWN
             * getTrashPeriodCoolDown());
@@ -50,12 +52,13 @@ public class GameSession {
         MemoryManager.saveTableOfRecords(recordsTable);
     }
 
-    public void destructionRegistration() {
+    public void registerDestruction(int points) {
         destructedTrashNumber += 1;
+        destructionBonus += points;
     }
 
     public void updateScore() {
-        score = (int) (TimeUtils.millis() - sessionStartTime) / 100 + destructedTrashNumber * 100;
+        score = (int) (TimeUtils.millis() - sessionStartTime) / 100 + destructionBonus;
     }
 
     public int getScore() {

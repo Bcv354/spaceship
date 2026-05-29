@@ -8,6 +8,8 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import space.battle.base.MemoryManager;
 import space.battle.components.RecordsListView;
+import space.battle.effects.ExplosionEffect;
+import space.battle.effects.ScreenShake;
 import space.battle.manager.ContactManager;
 import space.battle.base.GameResources;
 import space.battle.base.GameSession;
@@ -33,8 +35,10 @@ public class GameScreen extends ScreenAdapter {
 
     ArrayList<TrashObject> trashArray;
     ArrayList<BulletObject> bulletArray;
+    ArrayList<ExplosionEffect> explosionEffects;
 
     ContactManager contactManager;
+    ScreenShake screenShake;
 
     // PLAY state UI
     MovingBackgroundView backgroundView;
@@ -51,12 +55,15 @@ public class GameScreen extends ScreenAdapter {
 
     // ENDED state UI
     TextView recordsTextView;
+    TextView finalScoreTextView;
     RecordsListView recordsListView;
     ButtonView homeButton2;
 
     public GameScreen(MyGdxGame myGdxGame) {
         this.myGdxGame = myGdxGame;
         gameSession = new GameSession();
+        screenShake = new ScreenShake();
+        explosionEffects = new ArrayList<>();
 
         contactManager = new ContactManager(myGdxGame.world);
 
@@ -98,7 +105,8 @@ public class GameScreen extends ScreenAdapter {
         );
 
         recordsListView = new RecordsListView(myGdxGame.commonWhiteFont, 690);
-        recordsTextView = new TextView(myGdxGame.largeWhiteFont, 206, 842, "Last records");
+        recordsTextView = new TextView(myGdxGame.largeWhiteFont, 206, 900, "Last records");
+        finalScoreTextView = new TextView(myGdxGame.largeWhiteFont, 120, 980, "Your score: 0");
         homeButton2 = new ButtonView(
             280, 365,
             160, 70,
@@ -115,18 +123,25 @@ public class GameScreen extends ScreenAdapter {
     }
 
     @Override
+    public void hide() {
+        explosionEffects.clear();
+    }
+
+    @Override
+    public void dispose() {
+        ExplosionEffect.disposeShared();
+    }
+
+    @Override
     public void render(float delta) {
 
         handleInput();
+        screenShake.update(delta);
+        updateExplosions(delta);
 
         if (gameSession.state == GameState.PLAYING) {
             if (gameSession.shouldSpawnTrash()) {
-                TrashObject trashObject = new TrashObject(
-                    GameSettings.TRASH_WIDTH, GameSettings.TRASH_HEIGHT,
-                    GameResources.TRASH_IMG_PATH,
-                    myGdxGame.world
-                );
-                trashArray.add(trashObject);
+                trashArray.add(TrashObject.spawnRandom(myGdxGame.world));
             }
 
             if (shipObject.needToShoot()) {
@@ -142,7 +157,12 @@ public class GameScreen extends ScreenAdapter {
 
             if (!shipObject.isAlive()) {
                 gameSession.endGame();
+                finalScoreTextView.setText("Your score: " + gameSession.getScore());
                 recordsListView.setRecords(MemoryManager.loadRecordsTable());
+            }
+
+            if (shipObject.pollJustHit()) {
+                screenShake.addTrauma(0.45f);
             }
 
             updateTrash();
@@ -153,9 +173,30 @@ public class GameScreen extends ScreenAdapter {
             liveView.setLeftLives(shipObject.getLiveLeft());
 
             myGdxGame.stepWorld();
+            keepTrashFalling();
         }
 
         draw();
+    }
+
+    private void updateExplosions(float delta) {
+        for (int i = 0; i < explosionEffects.size(); i++) {
+            ExplosionEffect effect = explosionEffects.get(i);
+            effect.update(delta);
+            if (effect.isFinished()) {
+                explosionEffects.remove(i--);
+            }
+        }
+    }
+
+    private void spawnExplosion(TrashObject trash) {
+        int count = trash.getType().maxHp >= 3 ? 18 : 12;
+        explosionEffects.add(new ExplosionEffect(
+            trash.getX(), trash.getY(),
+            trash.getType().tint,
+            count
+        ));
+        screenShake.addTrauma(trash.getType().maxHp >= 3 ? 0.25f : 0.12f);
     }
 
     private void handleInput() {
@@ -193,6 +234,14 @@ public class GameScreen extends ScreenAdapter {
     private void draw() {
 
         myGdxGame.camera.update();
+        float shakeX = screenShake.getOffset().x;
+        float shakeY = screenShake.getOffset().y;
+        myGdxGame.camera.position.set(
+            GameSettings.SCREEN_WIDTH / 2f + shakeX,
+            GameSettings.SCREEN_HEIGHT / 2f + shakeY,
+            0
+        );
+        myGdxGame.camera.update();
         myGdxGame.batch.setProjectionMatrix(myGdxGame.camera.combined);
         ScreenUtils.clear(Color.CLEAR);
 
@@ -201,6 +250,7 @@ public class GameScreen extends ScreenAdapter {
         for (TrashObject trash : trashArray) trash.draw(myGdxGame.batch);
         shipObject.draw(myGdxGame.batch);
         for (BulletObject bullet : bulletArray) bullet.draw(myGdxGame.batch);
+        for (ExplosionEffect effect : explosionEffects) effect.draw(myGdxGame.batch);
         topBlackoutView.draw(myGdxGame.batch);
         scoreTextView.draw(myGdxGame.batch);
         liveView.draw(myGdxGame.batch);
@@ -213,6 +263,7 @@ public class GameScreen extends ScreenAdapter {
             continueButton.draw(myGdxGame.batch);
         } else if (gameSession.state == GameState.ENDED) {
             fullBlackoutView.draw(myGdxGame.batch);
+            finalScoreTextView.draw(myGdxGame.batch);
             recordsTextView.draw(myGdxGame.batch);
             recordsListView.draw(myGdxGame.batch);
             homeButton2.draw(myGdxGame.batch);
@@ -220,20 +271,34 @@ public class GameScreen extends ScreenAdapter {
 
         myGdxGame.batch.end();
 
+        myGdxGame.camera.position.set(
+            GameSettings.SCREEN_WIDTH / 2f,
+            GameSettings.SCREEN_HEIGHT / 2f,
+            0
+        );
+    }
+
+    private void keepTrashFalling() {
+        for (TrashObject trash : trashArray) {
+            if (trash.isAlive()) {
+                trash.maintainFallSpeed();
+            }
+        }
     }
 
     private void updateTrash() {
         for (int i = 0; i < trashArray.size(); i++) {
+            TrashObject trash = trashArray.get(i);
+            boolean hasToBeDestroyed = !trash.isAlive() || !trash.isInFrame();
 
-            boolean hasToBeDestroyed = !trashArray.get(i).isAlive() || !trashArray.get(i).isInFrame();
-
-            if (!trashArray.get(i).isAlive()) {
-                gameSession.destructionRegistration();
+            if (!trash.isAlive()) {
+                gameSession.registerDestruction(trash.getType().scoreValue);
+                spawnExplosion(trash);
                 if (myGdxGame.audioManager.isSoundOn) myGdxGame.audioManager.explosionSound.play(0.2f);
             }
 
             if (hasToBeDestroyed) {
-                myGdxGame.world.destroyBody(trashArray.get(i).body);
+                myGdxGame.world.destroyBody(trash.body);
                 trashArray.remove(i--);
             }
         }
@@ -249,6 +314,9 @@ public class GameScreen extends ScreenAdapter {
     }
 
     private void restartGame() {
+
+        explosionEffects.clear();
+        screenShake = new ScreenShake();
 
         for (int i = 0; i < trashArray.size(); i++) {
             myGdxGame.world.destroyBody(trashArray.get(i).body);
@@ -268,6 +336,7 @@ public class GameScreen extends ScreenAdapter {
 
         bulletArray.clear();
         gameSession.startGame();
+        finalScoreTextView.setText("Your score: 0");
     }
 
 }
